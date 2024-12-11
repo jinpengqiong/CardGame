@@ -59,6 +59,7 @@
   const players = ref([[], [], [], []])
   const winner = ref(null)
   const ifStarted = ref(false)
+  const gameState = ref('idle')
 
   // 洗牌
   const shuffleDeck = deck => {
@@ -70,7 +71,9 @@
   }
   const shuffleCards = () => {
     deck.value = shuffleDeck([...deck.value])
+    gameState.value = 'idle'
     ifStarted.value = false
+    winner.value = null
   }
 
   // 分发卡牌
@@ -85,6 +88,7 @@
   }
   const deal = () => {
     players.value = dealCards(deck.value)
+    gameState.value = 'playing'
   }
 
   // 确定赢家
@@ -145,8 +149,13 @@
   }
 
   const determineWinner = () => {
+    if (!ifStarted.value) {
+      winner.value = '请先发牌！'
+      return
+    }
     const winnerIndex = determineWinnerHandler(players.value)
     winner.value = `Player ${winnerIndex + 1} is the winner!`
+    gameState.value = 'finished'
   }
   </script>
 
@@ -169,21 +178,23 @@
           <button
             class="bg-blue-500 text-white py-2 px-4 rounded"
             @click="determineWinner"
+            :disabled="!ifStarted"
+            :class="{ 'opacity-50 cursor-not-allowed': !ifStarted }"
           >
             Determine Winner
           </button>
         </div>
-        <div v-for="(player, index) in players" :key="index">
-          <h3 v-if="ifStarted">Player {{ index + 1 }}'s Cards</h3>
-          <ul v-if="ifStarted" class="text-lg font-semibold mb-2">
-            <li v-for="card in player" :key="card" class="flex flex-wrap justify-center">
-              <div
-                class="card transition-transform duration-500 transform hover:scale-105"
-              >
-                {{ card }}
-              </div>
-            </li>
-          </ul>
+        <div class="players-container">
+          <div v-for="(player, index) in players" :key="index" class="player-section">
+            <h3 v-if="ifStarted" class="player-title">Player {{ index + 1 }}'s Cards</h3>
+            <ul v-if="ifStarted" class="cards-list">
+              <li v-for="card in player" :key="card" class="card-item">
+                <div class="card transition-transform duration-500 transform hover:scale-105">
+                  {{ card }}
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       <h2 v-if="winner && ifStarted" class="text-red-500 text-xl mt-10">{{ winner }}</h2>
       <h2 v-if="winner && !ifStarted" class="text-xl mt-10">Cards have been shuffled.</h2>
@@ -193,22 +204,54 @@
   <style scoped>
   @import 'tailwindcss/tailwind.css';
 
-  h3 {
-    font-size: 1.25rem;
-    margin: 0.5rem 0;
-  }
-
-  ul {
+  .players-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
-    list-style: none;
-    padding: 0;
+    justify-content: center;
+    gap: 2rem;
   }
 
-  li {
+  .player-section {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .player-title {
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
+    text-align: center;
+  }
+
+  .cards-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .card-item {
     margin: 0.5rem;
     padding: 0.5rem;
     background-color: #f0f0f0;
     border-radius: 0.25rem;
   }
+
+  .card {
+    position: relative;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .card[data-suit="@"] { color: #e53e3e; }
+  .card[data-suit="#"] { color: #e53e3e; }
+  .card[data-suit="^"] { color: #2d3748; }
+  .card[data-suit="*"] { color: #2d3748; }
   </style>
